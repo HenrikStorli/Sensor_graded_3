@@ -1,0 +1,56 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: run simulated",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/slam/run_simulated_SLAM.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: run real",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/slam/run_real_SLAM.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: run simulated fast",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/slam/run_simulated_SLAM.py",
+            "console": "integratedTerminal",
+            "pythonArgs": [
+                "-OO"
+            ]
+        },
+        {
+            "name": "Python: run real fast",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/slam/run_real_SLAM.py",
+            "console": "integratedTerminal",
+            "pythonArgs": [
+                "-OO"
+            ]
+        },
+        {
+            "name": "Python: generate handin zip",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/generate_handin.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Tests",
+            "type": "python",
+            "request": "test",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "_PYTEST_RAISE": "1"
+            }
+        }
+    ]
+}
