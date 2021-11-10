@@ -179,9 +179,9 @@ class EKFSLAM:
             The landmarks in the sensor frame.
         """
 
-        # TODO replace this with your own code
-        zpred = solution.EKFSLAM.EKFSLAM.h(self, eta)
-        return zpred
+        # # TODO replace this with your own code
+        # zpred = solution.EKFSLAM.EKFSLAM.h(self, eta)
+        # return zpred
 
         # extract states and map
         x = eta[0:3]
@@ -192,14 +192,27 @@ class EKFSLAM:
 
         # None as index ads an axis with size 1 at that position.
         # Numpy broadcasts size 1 dimensions to any size when needed
-        delta_m = None  # TODO, relative position of landmark to sensor on robot in world frame
+        n_landmarks = len(m[0,:])
+        delta_m = np.zeros_like(m)
+        for i in range(n_landmarks):
+            delta_m[:,i] = m[:,i] - x[0:2]
+            
+        # delta_m = None  # TODO, relative position of landmark to sensor on robot in world frame
 
         # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
-        zpredcart = None
+        zpredcart = np.zeros_like(m)
+        for i in range(n_landmarks):
+            zpredcart[:,i] = Rot@delta_m[:,i] - self.sensor_offset
+        # zpredcart = None
 
-        zpred_r = None  # TODO, ranges
-        zpred_theta = None  # TODO, bearings
-        zpred = None  # TODO, the two arrays above stacked on top of each other vertically like
+        zpred_r = np.zeros((n_landmarks,))
+        zpred_theta = np.zeros((n_landmarks,))
+        for i in range(n_landmarks):
+            zpred_r[i] = np.linalg.norm(zpredcart[:,i],2)
+            zpred_theta[i] = np.arctan2(zpredcart[1,i],zpredcart[0,i])
+        # zpred_r = None  # TODO, ranges
+        # zpred_theta = None  # TODO, bearings
+        zpred = np.array([zpred_r,zpred_theta])  # TODO, the two arrays above stacked on top of each other vertically like
         # [ranges;
         #  bearings]
         # into shape (2, #lmrk)
