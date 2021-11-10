@@ -68,16 +68,13 @@ class EKFSLAM:
         # TODO replace this with your own code
         #Fx = solution.EKFSLAM.EKFSLAM.Fx(self, x, u)
         #return Fx
-
-        print(x)
-        print('\n',u)
         uk      = u[0]
         vk      = u[1]
         phik    = u[2]
 
         xk     = x[0]
         yk     = x[1]
-        psik    = x[2]
+        psik   = x[2]
 
         Fx = np.eye(3)
 
@@ -105,10 +102,22 @@ class EKFSLAM:
             The Jacobian of f wrt. u.
         """
         # TODO replace this with your own code
-        Fu = solution.EKFSLAM.EKFSLAM.Fu(self, x, u)
-        return Fu
+        #Fu = solution.EKFSLAM.EKFSLAM.Fu(self, x, u)
+        #return Fu
+        uk      = u[0]
+        vk      = u[1]
+        phik    = u[2]
 
-        Fu = None  # TODO, eq (11.14)
+        xk     = x[0]
+        yk     = x[1]
+        psik   = x[2]
+
+        Fu = np.zeros((3,3))
+        Fu[0][0] = np.cos(psik)
+        Fu[1][1] = np.cos(psik)
+        Fu[2][2] = 1
+        Fu[1][0] = np.sin(psik)
+        Fu[0][1] = -1*np.sin(psik)
 
         return Fu
 
