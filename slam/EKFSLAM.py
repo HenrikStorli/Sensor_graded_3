@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from scipy.linalg import block_diag
 import scipy.linalg as la
 from utils import rotmat2d
+from utils import wrapToPi
 from JCBB import JCBB
 import utils
 import solution
@@ -65,10 +66,26 @@ class EKFSLAM:
             The Jacobian of f wrt. x.
         """
         # TODO replace this with your own code
-        Fx = solution.EKFSLAM.EKFSLAM.Fx(self, x, u)
-        return Fx
+        #Fx = solution.EKFSLAM.EKFSLAM.Fx(self, x, u)
+        #return Fx
 
-        Fx = None  # TODO, eq (11.13)
+        print(x)
+        print('\n',u)
+        uk      = u[0]
+        vk      = u[1]
+        phik    = u[2]
+
+        xk     = x[0]
+        yk     = x[1]
+        psik    = x[2]
+
+        Fx = np.eye(3)
+
+        arg1 = -uk*np.sin(psik)-vk*np.cos(psik)
+        arg2 = uk*np.cos(psik)-vk*np.sin(psik)
+
+        Fx[0][2]=arg1
+        Fx[1][2]=arg2
 
         return Fx
 
