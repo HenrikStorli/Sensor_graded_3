@@ -33,12 +33,19 @@ class EKFSLAM:
         np.ndarray, shape = (3,)
             the predicted state
         """
-        # TODO replace this with your own code
-        xpred = solution.EKFSLAM.EKFSLAM.f(self, x, u)
-        return xpred
+        xpred = np.zeros((3,))
+        xpred[0] = x[0] + u[0]*np.cos(x[2]) - u[1]*np.sin(x[2])
+        xpred[1] = x[1] + u[0]*np.sin(x[2]) + u[1]*np.cos(x[2])
+        xpred[2] = x[2] + u[2]
 
-        # TODO, eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
-        xpred = None
+        xpred[2] = utils.wrapToPi(xpred[2])
+
+        # # TODO replace this with your own code
+        # xpred = solution.EKFSLAM.EKFSLAM.f(self, x, u)
+        # return xpred
+
+        # # TODO, eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
+        # xpred = None
 
         return xpred
 
@@ -57,11 +64,15 @@ class EKFSLAM:
         np.ndarray
             The Jacobian of f wrt. x.
         """
-        # TODO replace this with your own code
-        Fx = solution.EKFSLAM.EKFSLAM.Fx(self, x, u)
-        return Fx
+        Fx = np.eye(3)
+        Fx[0,2] = -u[0]*np.sin(x[2]) - u[1]*np.cos(x[2])
+        Fx[1,2] = u[0]*np.cos(x[2]) - u[1]*np.sin(x[2])
 
-        Fx = None  # TODO, eq (11.13)
+        # # TODO replace this with your own code
+        # Fx = solution.EKFSLAM.EKFSLAM.Fx(self, x, u)
+        # return Fx
+
+        # Fx = None  # TODO, eq (11.13)
 
         return Fx
 
@@ -80,11 +91,17 @@ class EKFSLAM:
         np.ndarray
             The Jacobian of f wrt. u.
         """
-        # TODO replace this with your own code
-        Fu = solution.EKFSLAM.EKFSLAM.Fu(self, x, u)
-        return Fu
+        Fu =np.eye(3)
+        Fu[0,0] = np.cos(x[2])
+        Fu[0,1] = -np.sin(x[2])
+        Fu[1,0] = np.sin(x[2])
+        Fu[1,1] = np.cos(x[2])
 
-        Fu = None  # TODO, eq (11.14)
+        # # TODO replace this with your own code
+        # Fu = solution.EKFSLAM.EKFSLAM.Fu(self, x, u)
+        # return Fu
+
+        # Fu = None  # TODO, eq (11.14)
 
         return Fu
 
@@ -107,8 +124,9 @@ class EKFSLAM:
         Tuple[np.ndarray, np.ndarray], shapes= (3 + 2*#landmarks,), (3 + 2*#landmarks,)*2
             predicted mean and covariance of eta.
         """
-        etapred, P = solution.EKFSLAM.EKFSLAM.predict(self, eta, P, z_odo)
-        return etapred, P
+        # etapred_true, P_true = solution.EKFSLAM.EKFSLAM.predict(self, eta, P, z_odo)
+        # # return etapred, P
+        #print("start",P,"end")
 
         # check inout matrix
         assert np.allclose(P, P.T), "EKFSLAM.predict: not symmetric P input"
@@ -121,20 +139,20 @@ class EKFSLAM:
         etapred = np.empty_like(eta)
 
         x = eta[:3]
-        etapred[:3] = None  # TODO robot state prediction
-        etapred[3:] = None  # TODO landmarks: no effect
+        etapred[:3] = self.f(x,z_odo)  # TODO robot state prediction
+        etapred[3:] = eta[3:]  # TODO landmarks: no effect
 
-        Fx = None  # TODO
-        Fu = None  # TODO
+        Fx = self.Fx(x, z_odo)  # TODO
+        Fu = self.Fu(x, z_odo)  # TODO
 
         # evaluate covariance prediction in place to save computation
         # only robot state changes, so only rows and colums of robot state needs changing
         # cov matrix layout:
         # [[P_xx, P_xm],
         # [P_mx, P_mm]]
-        P[:3, :3] = None  # TODO robot cov prediction
-        P[:3, 3:] = None  # TODO robot-map covariance prediction
-        P[3:, :3] = None  # TODO map-robot covariance: transpose of the above
+        P[:3, :3] = Fx@P[:3,:3]@Fx.T + Fu@self.Q@Fu.T  # TODO robot cov prediction
+        P[:3, 3:] = Fx@P[:3,3:]  # TODO robot-map covariance prediction
+        P[3:, :3] = P[3:, :3]@Fx.T  # TODO map-robot covariance: transpose of the above
 
         assert np.allclose(P, P.T), "EKFSLAM.predict: not symmetric P"
         assert np.all(
@@ -144,6 +162,7 @@ class EKFSLAM:
             etapred.shape * 2 == P.shape
         ), "EKFSLAM.predict: calculated shapes does not match"
 
+        # print(P-P_true, etapred-etapred_true)
         return etapred, P
 
     def h(self, eta: np.ndarray) -> np.ndarray:
