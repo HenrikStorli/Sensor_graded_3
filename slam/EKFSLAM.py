@@ -140,8 +140,9 @@ class EKFSLAM:
         Tuple[np.ndarray, np.ndarray], shapes= (3 + 2*#landmarks,), (3 + 2*#landmarks,)*2
             predicted mean and covariance of eta.
         """
-        etapred, P = solution.EKFSLAM.EKFSLAM.predict(self, eta, P, z_odo)
-        return etapred, P
+
+        #etapred, P = solution.EKFSLAM.EKFSLAM.predict(self, eta, P, z_odo)
+        #return etapred, P
 
         # check inout matrix
         assert np.allclose(P, P.T), "EKFSLAM.predict: not symmetric P input"
@@ -154,21 +155,21 @@ class EKFSLAM:
         etapred = np.empty_like(eta)
 
         x = eta[:3]
-        etapred[:3] = None  # TODO robot state prediction
-        etapred[3:] = None  # TODO landmarks: no effect
+        etapred[:3] = self.f(x,z_odo)  # TODO robot state prediction
+        etapred[3:] = eta[3:]  # TODO landmarks: no effect
 
-        Fx = None  # TODO
-        Fu = None  # TODO
+        Fx = self.Fx(x, z_odo)
+        Fu = self.Fu(x, z_odo)
 
         # evaluate covariance prediction in place to save computation
         # only robot state changes, so only rows and colums of robot state needs changing
         # cov matrix layout:
         # [[P_xx, P_xm],
         # [P_mx, P_mm]]
-        P[:3, :3] = None  # TODO robot cov prediction
-        P[:3, 3:] = None  # TODO robot-map covariance prediction
-        P[3:, :3] = None  # TODO map-robot covariance: transpose of the above
-
+        P[:3, :3] = Fx@P[:3,:3]@Fx.T+ self.Q  # TODO robot cov prediction
+        P[:3, 3:] = Fu@P[:3,3:]  # TODO robot-map covariance prediction
+        P[3:, :3] = P[:3,3:].T # TODO map-robot covariance: transpose of the above
+        print(np.linalg.eigvals(P))
         assert np.allclose(P, P.T), "EKFSLAM.predict: not symmetric P"
         assert np.all(
             np.linalg.eigvals(P) > 0
