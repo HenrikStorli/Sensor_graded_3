@@ -239,8 +239,9 @@ class EKFSLAM:
         np.ndarray, shape=(2 * #landmarks, 3 + 2 * #landmarks)
             the jacobian of h wrt. eta.
         """
-        H = solution.EKFSLAM.EKFSLAM.h_jac(self, eta)
-        return H
+        H_true = solution.EKFSLAM.EKFSLAM.h_jac(self, eta)
+        # print(H)
+        # return H
 
         # extract states and map
         x = eta[0:3]
@@ -252,17 +253,31 @@ class EKFSLAM:
         Rot = rotmat2d(x[2])
 
         # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
-        delta_m = None
+        # delta_m = None
+        delta_m = np.zeros_like(m)
+        for i in range(numM):
+            delta_m[:,i] = m[:,i] - x[0:2]
 
         # TODO, (2, #measurements), each measured position in cartesian coordinates like
-        zc = None
+        zc = np.zeros_like(m)
+        for i in range(numM):
+            zc[:,i] = delta_m[:,i] - Rot@self.sensor_offset
+        # zc = None
         # [x coordinates;
         #  y coordinates]
+        
+        zpred_r = np.zeros((numM,))
+        zpred_theta = np.zeros((numM,))
+        for i in range(numM):
+            zpred_r[i] = np.linalg.norm(zc[:,i],2)
+            zpred_theta[i] = np.arctan2(zc[1,i],zc[0,i])
+        zpred = np.array([zpred_r,zpred_theta])
 
-        zpred = None  # TODO (2, #measurements), predicted measurements, like
+        # zpred = None  # TODO (2, #measurements), predicted measurements, like
         # [ranges;
         #  bearings]
-        zr = None  # TODO, ranges
+
+        zr = zpred_r  # TODO, ranges
 
         Rpihalf = rotmat2d(np.pi / 2)
 
@@ -270,24 +285,46 @@ class EKFSLAM:
         # you will not detect (the maximum range should be available from the data).
         # But keep it simple to begin with.
 
-        # Allocate H and set submatrices as memory views into H
-        # You may or may not want to do this like this
-        # TODO, see eq (11.15), (11.16), (11.17)
+        # # Allocate H and set submatrices as memory views into H
+        # # You may or may not want to do this like this
+        # # TODO, see eq (11.15), (11.16), (11.17)
         H = np.zeros((2 * numM, 3 + 2 * numM))
-        Hx = H[:, :3]  # slice view, setting elements of Hx will set H as well
-        Hm = H[:, 3:]  # slice view, setting elements of Hm will set H as well
+        # Hx = H[:, :3]  # slice view, setting elements of Hx will set H as well
+        # Hm = H[:, 3:]  # slice view, setting elements of Hm will set H as well
+
+
 
         # proposed way is to go through landmarks one by one
         # preallocate and update this for some speed gain if looping
         jac_z_cb = -np.eye(2, 3)
+        Hx = np.zeros((2,3))
+        Hm = np.zeros((2,2))
         for i in range(numM):  # But this whole loop can be vectorized
-            ind = 2 * i  # starting postion of the ith landmark into H
+            indx = 2 * i  # starting postion of the ith landmark into H
             # the inds slice for the ith landmark into H
-            inds = slice(ind, ind + 2)
+            indxs = slice(indx, indx + 2)
+
+            indm = 3 + i*2
+            indms = slice(indm, indm + 2)
 
             # TODO: Set H or Hx and Hm here
+            Hx[1,2] = 1
+            Hx[0,0:2] = zc[:,i].T/zpred_r[i]
+            Hx[1,0:2] = zc[:,i].T@Rpihalf/zpred_r[i]**2
+            Hx = -Hx
+
+            Hm[0,0:2] = zpred_r[i]*zc[:,i].T
+            Hm[1:0:2] = zc[:,i].T@Rpihalf
+            Hm = Hm/zpred_r[i]**2
+            
+
+            H[indxs, 0:3] = Hx
+            H[indxs, indms] = Hm
+
 
         # TODO: You can set some assertions here to make sure that some of the structure in H is correct
+        print("TRY:",H)
+        print("TRUE:",H_true)
         return H
 
     def add_landmarks(
