@@ -166,9 +166,9 @@ class EKFSLAM:
         # cov matrix layout:
         # [[P_xx, P_xm],
         # [P_mx, P_mm]]
-        P[:3, :3] = Fx@P[:3,:3]@Fx.T+ self.Q  # TODO robot cov prediction
+        P[:3, :3] = Fx@P[:3,:3]@Fx.T+ Fu@self.Q@Fu.T  # TODO robot cov prediction
         P[:3, 3:] = Fu@P[:3,3:]  # TODO robot-map covariance prediction
-        P[3:, :3] = P[:3,3:].T # TODO map-robot covariance: transpose of the above
+        P[3:, :3] = Fu@P[:3,3:].T # TODO map-robot covariance: transpose of the above
         print(np.linalg.eigvals(P))
         assert np.allclose(P, P.T), "EKFSLAM.predict: not symmetric P"
         assert np.all(
