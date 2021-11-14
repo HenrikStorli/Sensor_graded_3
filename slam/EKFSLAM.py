@@ -326,9 +326,8 @@ class EKFSLAM:
             eta with new landmarks appended, and its covariance
         """
         # TODO replace this with your own code
-        #etaadded, Padded = solution.EKFSLAM.EKFSLAM.add_landmarks(
-        #    self, eta, P, z)
-        #return etaadded, Padded
+        etaadded_correct, Padded_correct = solution.EKFSLAM.EKFSLAM.add_landmarks(
+           self, eta, P, z)
 
         n = P.shape[0]
         assert z.ndim == 1, "SLAM.add_landmarks: z must be a 1d array"
@@ -338,6 +337,7 @@ class EKFSLAM:
 
         Gx = np.empty((numLmk * 2, 3))
         Rall = np.zeros((numLmk * 2, numLmk * 2))
+        print(self.h(eta))
         I2 = np.eye(2)  # Preallocate, used for Gx
         # For transforming landmark position into world frame
         sensor_offset_world = rotmat2d(eta[2]) @ self.sensor_offset
@@ -352,20 +352,23 @@ class EKFSLAM:
             ## Measurement stuff
             zrj = zj[0]  #radius
             zphij= zj[1] #phi angle
-            
+            print(zj)
             #eta stuff
             psi = eta[2] #psi/yaw angle
 
             rot = rotmat2d(zphij+psi)  # TODO, rotmat in Gz
-        
             # TODO, calculate position of new landmark in world frame
-            lmnew[inds] = rotmat2d(psi) @ self.sensor_offset
+            x_z = zrj*np.cos(zphij)
+            y_z = zrj*np.sin(zphij)
 
+            z_c = np.array([x_z,y_z])
+
+            lmnew[inds] =np.array([eta[0],eta[1]]) + rotmat2d(psi)@z_c+sensor_offset_world
             ## Covariance robot state x
             Gx[inds, :2] = I2  # TODO
             vec = np.array([-np.sin(zphij+psi),np.cos(zphij+psi)])
             Gx[inds, 2] =zrj*vec+sensor_offset_world_der
-        
+
             # Covariance measured state z
             IGz = I2 
             IGz[1][1] = zrj
@@ -375,10 +378,10 @@ class EKFSLAM:
                         [np.sin(zphij),zrj*np.cos(zphij)]])
             Gz_c = J@Gz@J.T
     
-            Rall[inds, inds] = Gz_c
+            Rall[inds, inds] = block_diag(Gz_c)
             
-        #print(block_diag(Rall))
-
+        #print("\n Rall",block_diag(Rall))
+        #print(lmnew)
         assert len(lmnew) % 2 == 0, "SLAM.add_landmark: lmnew not even length"
         #print("eta:",eta,"\nnew landmark",lmnew)
         etaadded = np.block([eta,lmnew])  # TODO, append new landmarks to state vector
@@ -393,15 +396,18 @@ class EKFSLAM:
         Padded = block_diag(P,block2)
 
         print("shape Padded : ",np.shape(Padded))
-
-        Pcolon_x =np.zeros((3,3))
-        Pcolon_x[:,0] = P[:,0]
+        
+        Pcolon_x =P[:,0:3]
+        print("Pcolon_x",Pcolon_x)
 
         Padded[:n, n:] =Pcolon_x@Gx.T  # TODO, top right corner of P_new
         print("\nshape:",np.shape(Padded[:n, n:]))
         # TODO, transpose of above. Should yield the same as calcualion, but this enforces symmetry and should be cheaper
         Padded[n:, :n] = Padded[:n, n:].T
-        
+        # print("Correct etaadded",etaadded_correct)
+        # print("\nTest: etaadded",etaadded)
+        print("Test: Padded compare",Padded_correct-Padded)
+        print("\n Test: Padded",Padded)
         assert (
             etaadded.shape * 2 == Padded.shape
         ), "EKFSLAM.add_landmarks: calculated eta and P has wrong shape"
