@@ -239,7 +239,7 @@ class EKFSLAM:
         np.ndarray, shape=(2 * #landmarks, 3 + 2 * #landmarks)
             the jacobian of h wrt. eta.
         """
-        H_true = solution.EKFSLAM.EKFSLAM.h_jac(self, eta)
+        # H_true = solution.EKFSLAM.EKFSLAM.h_jac(self, eta)
         # print(H)
         # return H
 
@@ -260,24 +260,19 @@ class EKFSLAM:
 
         # TODO, (2, #measurements), each measured position in cartesian coordinates like
         zc = np.zeros_like(m)
+        zpred_r = np.zeros((numM,))
         for i in range(numM):
             zc[:,i] = delta_m[:,i] - Rot@self.sensor_offset
+            zpred_r[i] = np.linalg.norm(zc[:,i],2)
+
         # zc = None
         # [x coordinates;
         #  y coordinates]
-        
-        zpred_r = np.zeros((numM,))
-        zpred_theta = np.zeros((numM,))
-        for i in range(numM):
-            zpred_r[i] = np.linalg.norm(zc[:,i],2)
-            zpred_theta[i] = np.arctan2(zc[1,i],zc[0,i])
-        zpred = np.array([zpred_r,zpred_theta])
+            
 
         # zpred = None  # TODO (2, #measurements), predicted measurements, like
         # [ranges;
         #  bearings]
-
-        zr = zpred_r  # TODO, ranges
 
         Rpihalf = rotmat2d(np.pi / 2)
 
@@ -308,23 +303,23 @@ class EKFSLAM:
             indms = slice(indm, indm + 2)
 
             # TODO: Set H or Hx and Hm here
-            Hx[1,2] = 1
-            Hx[0,0:2] = zc[:,i].T/zpred_r[i]
-            Hx[1,0:2] = zc[:,i].T@Rpihalf/zpred_r[i]**2
-            Hx = -Hx
+            jac_z_cb[:,2] = -Rpihalf@delta_m[:,i]
 
-            Hm[0,0:2] = zpred_r[i]*zc[:,i].T
-            Hm[1:0:2] = zc[:,i].T@Rpihalf
-            Hm = Hm/zpred_r[i]**2
+
+            Hx[0,0:3] =  zc[:,i].T/zpred_r[i]@jac_z_cb
+            Hx[1,0:3] = zc[:,i].T@Rpihalf.T@jac_z_cb/zpred_r[i]**2
+
+            Hm[0,0:2] = zc[:,i].T/zpred_r[i]
+            Hm[1,0:2] = -zc[:,i].T@Rpihalf/zpred_r[i]**2
             
-
             H[indxs, 0:3] = Hx
             H[indxs, indms] = Hm
 
 
         # TODO: You can set some assertions here to make sure that some of the structure in H is correct
-        print("TRY:",H)
-        print("TRUE:",H_true)
+        # print("TRY:",H)
+        # print("TRUE:",H_true)
+        # print("H- H_true:", H- H_true)
         return H
 
     def add_landmarks(
