@@ -343,6 +343,8 @@ class EKFSLAM:
         # etaadded_correct, Padded_correct = solution.EKFSLAM.EKFSLAM.add_landmarks(
         #    self, eta, P, z)
 
+        # return etaadded_correct, Padded_correct
+
         n = P.shape[0]
         assert z.ndim == 1, "SLAM.add_landmarks: z must be a 1d array"
 
@@ -350,7 +352,7 @@ class EKFSLAM:
         lmnew = np.empty_like(z)
 
         Gx = np.zeros((numLmk * 2, 3))
-        print("first print",Gx)
+        # print("first print",Gx)
         Rall = np.zeros((numLmk * 2, numLmk * 2))
         # print(self.h(eta))
         # I2 = np.eye(2)  # Preallocate, used for Gx
@@ -511,21 +513,25 @@ class EKFSLAM:
         Tuple[np.ndarray, np.ndarray, float, np.ndarray]
             [description]
         """
-        # TODO replace this with your own code
-        etaupd, Pupd, NIS, a = solution.EKFSLAM.EKFSLAM.update(self, eta, P, z)
-        return etaupd, Pupd, NIS, a
+        # # TODO replace this with your own code
+        # etaupd_sol, Pupd_sol, NIS_sol, a_sol = solution.EKFSLAM.EKFSLAM.update(self, eta, P, z)
+        # return etaupd, Pupd, NIS, a
 
         numLmk = (eta.size - 3) // 2
         assert (len(eta) - 3) % 2 == 0, "EKFSLAM.update: landmark lenght not even"
 
         if numLmk > 0:
             # Prediction and innovation covariance
-            zpred = None  # TODO
-            H = None  # TODO
+            zpred = self.h(eta)  # TODO
+            H = self.h_jac(eta) # TODO
 
             # Here you can use simply np.kron (a bit slow) to form the big (very big in VP after a while) R,
             # or be smart with indexing and broadcasting (3d indexing into 2d mat) realizing you are adding the same R on all diagonals
-            S = None  # TODO,
+
+            # S = H@P@H.T + self.R # TODO,
+            big_R = np.kron(np.eye((numLmk)),self.R)
+            S = H@P@H.T + big_R
+
             assert (
                 S.shape == zpred.shape * 2
             ), "EKFSLAM.update: wrong shape on either S or zpred"
@@ -536,27 +542,38 @@ class EKFSLAM:
 
             # No association could be made, so skip update
             if za.shape[0] == 0:
+                print("if za.shape[0] == 0:")
                 etaupd = eta
                 Pupd = P
                 NIS = 1  # TODO: beware this one when analysing consistency.
             else:
+                print("# Create the associated innovation")
                 # Create the associated innovation
                 v = za.ravel() - zpred  # za: 2D -> flat
                 v[1::2] = utils.wrapToPi(v[1::2])
 
                 # Kalman mean update
                 # S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
-                W = None  # TODO, Kalman gain, can use S_cho_factors
-                etaupd = None  # TODO, Kalman update
+                W = P@Ha.T@np.linalg.inv(Sa)  # TODO, Kalman gain, can use S_cho_factors
+
+                etaupd = eta + W@v # TODO, Kalman update
 
                 # Kalman cov update: use Joseph form for stability
                 jo = -W @ Ha
                 # same as adding Identity mat
                 jo[np.diag_indices(jo.shape[0])] += 1
-                Pupd = None  # TODO, Kalman update. This is the main workload on VP after speedups
+                # big_R = np.kron(np.eye((za.shape[0]/2)),self.R)
+                # print(np.shape(W))
+                # print(np.shape(big_R))
+                # print(np.shape(jo@P@jo.T))
+                # print(za.shape[0])
+
+                # Pupd = jo@P@jo.T + W@big_R@W.T  # TODO, Kalman update. This is the main workload on VP after speedups
+
+                Pupd = jo@P
 
                 # calculate NIS, can use S_cho_factors
-                NIS = None  # TODO
+                NIS = v.T@np.linalg.inv(Sa)@v  # TODO
 
                 # When tested, remove for speed
                 assert np.allclose(
@@ -569,6 +586,7 @@ class EKFSLAM:
             a = np.full(z.shape[0], -1)
             z = z.flatten()
             NIS = 1  # TODO: beware this one when analysing consistency.
+            print("# All measurements are new landmarks")
             etaupd = eta
             Pupd = P
 
@@ -576,16 +594,22 @@ class EKFSLAM:
         if self.do_asso:
             is_new_lmk = a == -1
             if np.any(is_new_lmk):
+                print("# Create new landmarks if any is available")
                 z_new_inds = np.empty_like(z, dtype=bool)
                 z_new_inds[::2] = is_new_lmk
                 z_new_inds[1::2] = is_new_lmk
                 z_new = z[z_new_inds]
-                etaupd, Pupd = None  # TODO, add new landmarks.
+                etaupd, Pupd = self.add_landmarks(etaupd, Pupd, z_new)#None  # TODO, add new landmarks.
 
         assert np.allclose(
             Pupd, Pupd.T), "EKFSLAM.update: Pupd must be symmetric"
         assert np.all(np.linalg.eigvals(Pupd) >=
                       0), "EKFSLAM.update: Pupd must be PSD"
+
+        # print("etaupd",etaupd_sol - etaupd)
+        # print("Pupd", Pupd - Pupd_sol)
+        # print("NIS", NIS - NIS_sol)
+        # print("a", a - a_sol)
 
         return etaupd, Pupd, NIS, a
 
