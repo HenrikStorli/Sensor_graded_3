@@ -398,6 +398,7 @@ class EKFSLAM:
         print("shape Padded : ",np.shape(Padded))
         
         Pcolon_x =P[:,0:3]
+        
         print("Pcolon_x",Pcolon_x)
 
         Padded[:n, n:] =Pcolon_x@Gx.T  # TODO, top right corner of P_new
