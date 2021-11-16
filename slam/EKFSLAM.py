@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from scipy.linalg import block_diag
 import scipy.linalg as la
 from utils import rotmat2d
-from JCBB import JCBB
+from JCBB import JCBB, num_associations
 import utils
 import solution
 
@@ -542,7 +542,6 @@ class EKFSLAM:
 
             # No association could be made, so skip update
             if za.shape[0] == 0:
-                # print("if za.shape[0] == 0:")
                 etaupd = eta
                 Pupd = P
                 NIS = 1  # TODO: beware this one when analysing consistency.
@@ -554,7 +553,10 @@ class EKFSLAM:
 
                 # Kalman mean update
                 # S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
-                W = P@Ha.T@np.linalg.inv(Sa)  # TODO, Kalman gain, can use S_cho_factors
+                S,low = la.cho_factor(Sa)
+                S_inv = la.cho_solve((S,low),np.eye(Sa.shape[0]))
+
+                W = P@Ha.T@S_inv  # TODO, Kalman gain, can use S_cho_factors
 
                 etaupd = eta + W@v # TODO, Kalman update
 
@@ -562,18 +564,27 @@ class EKFSLAM:
                 jo = -W @ Ha
                 # same as adding Identity mat
                 jo[np.diag_indices(jo.shape[0])] += 1
-                # big_R = np.kron(np.eye((za.shape[0]/2)),self.R)
-                # print(np.shape(W))
-                # print(np.shape(big_R))
-                # print(np.shape(jo@P@jo.T))
-                # print(za.shape[0])
 
-                # Pupd = jo@P@jo.T + W@big_R@W.T  # TODO, Kalman update. This is the main workload on VP after speedups
+                dim_big_R = int(W.shape[1]/2)
+                big_R = np.kron(np.eye(dim_big_R),self.R)
 
-                Pupd = jo@P
+                # num_asso = za.shape[0]
+                # big_R = big_R[0:num_asso,0:num_asso]
+                
+
+                # print("num_asso", num_asso)
+                # print("jo@P@jo.T", np.shape(jo@P@jo.T))
+                # print("W,", np.shape(W))
+                # print("big_R", np.shape(big_R))
+                
+
+                Pupd = jo@P@jo.T + W@big_R@W.T  # TODO, Kalman update. This is the main workload on VP after speedups
+
+
+                # Pupd = jo@P
 
                 # calculate NIS, can use S_cho_factors
-                NIS = v.T@np.linalg.inv(Sa)@v  # TODO
+                NIS = v.T@S_inv@v  # TODO
 
                 # When tested, remove for speed
                 assert np.allclose(

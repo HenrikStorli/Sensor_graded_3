@@ -111,11 +111,11 @@ def main():
     # JCBBalphas = np.array([0.001, 0.0001])
 
     # %% Initilize
-    Q = np.diag([0.1, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
-    R = np.diag([10, 1 * np.pi / 180]) ** 2  # TODO tune
+    Q = np.diag([0.0001, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
+    R = np.diag([0.0001, 1 * np.pi / 180]) ** 2  # TODO tune
 
     # first is for joint compatibility, second is individual
-    JCBBalphas = np.array([1e-16, 1e-16])
+    JCBBalphas = np.array([1e-8, 1e-8])
 
     doAsso = True
 
