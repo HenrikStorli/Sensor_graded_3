@@ -96,12 +96,26 @@ def main():
     K = len(z)
     M = len(landmarks)
 
+    # # %% Initilize
+    # Q = np.diag([0.1, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
+    # R = np.diag([0.1, 1 * np.pi / 180]) ** 2  # TODO tune
+
+    # # first is for joint compatibility, second is individual
+    # JCBBalphas = np.array([0.001, 0.0001])  # TODO tune
+
+    # # %% lættis values - same error, but worse consistency
+    # Q = np.diag([0.5, 0.5, 5 * np.pi / 180]) ** 2  
+    # R = np.diag([0.5, 5 * np.pi / 180]) ** 2  
+
+    # # first is for joint compatibility, second is individual
+    # JCBBalphas = np.array([0.001, 0.0001])
+
     # %% Initilize
     Q = np.diag([0.1, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
-    R = np.diag([0.1, 1 * np.pi / 180]) ** 2  # TODO tune
+    R = np.diag([10, 1 * np.pi / 180]) ** 2  # TODO tune
 
     # first is for joint compatibility, second is individual
-    JCBBalphas = np.array([0.001, 0.0001])  # TODO tune
+    JCBBalphas = np.array([1e-16, 1e-16])
 
     doAsso = True
 
@@ -124,7 +138,7 @@ def main():
     NEESes = np.zeros((K, 3))
 
     # For consistency testing
-    alpha = 0.05
+    alpha = 0.90
 
     # init
     eta_pred[0] = poseGT[0]  # we start at the correct position for reference
@@ -149,10 +163,10 @@ def main():
         # Transpose is to stack measurements rowwise
         # z_k = z[k][0].T
 
-        eta_hat[k], P_hat[k], NIS[k], a[k] =  # TODO update
+        eta_hat[k], P_hat[k], NIS[k], a[k] =  slam.update(eta_pred[k], P_pred[k], z_k)# TODO update
 
         if k < K - 1:
-            eta_pred[k + 1], P_pred[k + 1] =  # TODO predict
+            eta_pred[k + 1], P_pred[k + 1] =  slam.predict(eta_hat[k], P_hat[k], odometry[k])# TODO predict
 
         assert (
             eta_hat[k].shape[0] == P_hat[k].shape[0]
@@ -169,7 +183,8 @@ def main():
             NISnorm[k] = 1
             CInorm[k].fill(1)
 
-        NEESes[k] =  # TODO, use provided function slam.NEESes
+        # print(np.shape(P_hat[k]))
+        NEESes[k] =  slam.NEESes(eta_hat[k][:3], P_hat[k][:3,:3], poseGT[k])# TODO, use provided function slam.NEESes
 
         if doAssoPlot and k > 0:
             axAsso.clear()

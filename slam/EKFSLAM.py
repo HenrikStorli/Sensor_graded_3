@@ -542,12 +542,12 @@ class EKFSLAM:
 
             # No association could be made, so skip update
             if za.shape[0] == 0:
-                print("if za.shape[0] == 0:")
+                # print("if za.shape[0] == 0:")
                 etaupd = eta
                 Pupd = P
                 NIS = 1  # TODO: beware this one when analysing consistency.
             else:
-                print("# Create the associated innovation")
+                # print("# Create the associated innovation")
                 # Create the associated innovation
                 v = za.ravel() - zpred  # za: 2D -> flat
                 v[1::2] = utils.wrapToPi(v[1::2])
@@ -586,7 +586,7 @@ class EKFSLAM:
             a = np.full(z.shape[0], -1)
             z = z.flatten()
             NIS = 1  # TODO: beware this one when analysing consistency.
-            print("# All measurements are new landmarks")
+            # print("# All measurements are new landmarks")
             etaupd = eta
             Pupd = P
 
@@ -594,7 +594,7 @@ class EKFSLAM:
         if self.do_asso:
             is_new_lmk = a == -1
             if np.any(is_new_lmk):
-                print("# Create new landmarks if any is available")
+                # print("# Create new landmarks if any is available")
                 z_new_inds = np.empty_like(z, dtype=bool)
                 z_new_inds[::2] = is_new_lmk
                 z_new_inds[1::2] = is_new_lmk
