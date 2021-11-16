@@ -96,16 +96,22 @@ def main():
     K = len(z)
     M = len(landmarks)
 
-    # %% Initilize
-    # Q = np.diag([0.1,0.1, 1 * np.pi / 180]) ** 2  # TODO tune
-    # R = np.diag([0.1, 1* np.pi / 180]) ** 2  # TODO tune
-
-    Q = np.diag([0.1,0.1, 1 * np.pi / 180]) ** 2
-    R = np.diag([0.1, 1* np.pi / 180]) ** 2
+    # # %% Initilize
+    Q = np.diag([0.1, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
+    R = np.diag([0.1, 1 * np.pi / 180]) ** 2  # TODO tune
 
     # first is for joint compatibility, second is individual
-    # JCBBalphas = np.array([0.001, 0.0001])  # TODO tune
     JCBBalphas = np.array([0.001, 0.0001])  # TODO tune
+
+    ##Good values
+    # Q = np.diag([0.04,0.09, 0.5 * np.pi / 180]) ** 2
+    # R = np.diag([0.4, 0.80* np.pi / 180]) ** 2
+    # JCBBalphas = np.array([0.001*0.01, 0.0001*0.01])  # TODO tune
+
+    ##same RMSE as initial values, but worse filter consistency
+    # Q = np.diag([0.5, 0.5, 5 * np.pi / 180]) ** 2  
+    # R = np.diag([0.5, 5 * np.pi / 180]) ** 2  
+    # JCBBalphas = np.array([0.001, 0.0001])
     doAsso = True
 
 

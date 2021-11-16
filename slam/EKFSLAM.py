@@ -551,19 +551,21 @@ class EKFSLAM:
 
             # No association could be made, so skip update
             if za.shape[0] == 0:
-                #print("if za.shape[0] == 0:")
                 etaupd = eta
                 Pupd = P
                 NIS = 1  # TODO: beware this one when analysing consistency.
             else:
-                #print("# Create the associated innovation")
+                # print("# Create the associated innovation")
                 # Create the associated innovation
                 v = za.ravel() - zpred  # za: 2D -> flat
                 v[1::2] = utils.wrapToPi(v[1::2])
 
                 # Kalman mean update
                 # S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
-                W = P@Ha.T@np.linalg.inv(Sa)  # TODO, Kalman gain, can use S_cho_factors
+                S,low = la.cho_factor(Sa)
+                S_inv = la.cho_solve((S,low),np.eye(Sa.shape[0]))
+
+                W = P@Ha.T@S_inv  # TODO, Kalman gain, can use S_cho_factors
 
                 etaupd = eta + W@v # TODO, Kalman update
 
@@ -571,18 +573,27 @@ class EKFSLAM:
                 jo = -W @ Ha
                 # same as adding Identity mat
                 jo[np.diag_indices(jo.shape[0])] += 1
-                # big_R = np.kron(np.eye((za.shape[0]/2)),self.R)
-                # print(np.shape(W))
-                # print(np.shape(big_R))
-                # print(np.shape(jo@P@jo.T))
-                # print(za.shape[0])
 
-                # Pupd = jo@P@jo.T + W@big_R@W.T  # TODO, Kalman update. This is the main workload on VP after speedups
+                dim_big_R = int(W.shape[1]/2)
+                big_R = np.kron(np.eye(dim_big_R),self.R)
 
-                Pupd = jo@P
+                # num_asso = za.shape[0]
+                # big_R = big_R[0:num_asso,0:num_asso]
+                
+
+                # print("num_asso", num_asso)
+                # print("jo@P@jo.T", np.shape(jo@P@jo.T))
+                # print("W,", np.shape(W))
+                # print("big_R", np.shape(big_R))
+                
+
+                Pupd = jo@P@jo.T + W@big_R@W.T  # TODO, Kalman update. This is the main workload on VP after speedups
+
+
+                # Pupd = jo@P
 
                 # calculate NIS, can use S_cho_factors
-                NIS = v.T@np.linalg.inv(Sa)@v  # TODO
+                NIS = v.T@S_inv@v  # TODO
 
                 # When tested, remove for speed
                 assert np.allclose(
@@ -595,7 +606,7 @@ class EKFSLAM:
             a = np.full(z.shape[0], -1)
             z = z.flatten()
             NIS = 1  # TODO: beware this one when analysing consistency.
-            #print("# All measurements are new landmarks")
+            # print("# All measurements are new landmarks")
             etaupd = eta
             Pupd = P
 
@@ -603,7 +614,7 @@ class EKFSLAM:
         if self.do_asso:
             is_new_lmk = a == -1
             if np.any(is_new_lmk):
-                #print("# Create new landmarks if any is available")
+                # print("# Create new landmarks if any is available")
                 z_new_inds = np.empty_like(z, dtype=bool)
                 z_new_inds[::2] = is_new_lmk
                 z_new_inds[1::2] = is_new_lmk
