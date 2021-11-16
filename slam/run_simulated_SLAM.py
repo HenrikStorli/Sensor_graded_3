@@ -96,7 +96,7 @@ def main():
     K = len(z)
     M = len(landmarks)
 
-    # # %% Initilize
+    # # # %% Initilize
     # Q = np.diag([0.1, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
     # R = np.diag([0.1, 1 * np.pi / 180]) ** 2  # TODO tune
 
@@ -111,8 +111,8 @@ def main():
     # JCBBalphas = np.array([0.001, 0.0001])
 
     # %% Initilize
-    Q = np.diag([0.0001, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
-    R = np.diag([0.0001, 1 * np.pi / 180]) ** 2  # TODO tune
+    Q = np.diag([0.001, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
+    R = np.diag([0.001, 1 * np.pi / 180]) ** 2  # TODO tune
 
     # first is for joint compatibility, second is individual
     JCBBalphas = np.array([1e-8, 1e-8])
@@ -138,7 +138,7 @@ def main():
     NEESes = np.zeros((K, 3))
 
     # For consistency testing
-    alpha = 0.90
+    alpha = 0.95
 
     # init
     eta_pred[0] = poseGT[0]  # we start at the correct position for reference
