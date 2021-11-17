@@ -96,12 +96,12 @@ def main():
     K = len(z)
     M = len(landmarks)
 
-    # # # %% Initilize
-    # Q = np.diag([0.1, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
-    # R = np.diag([0.1, 1 * np.pi / 180]) ** 2  # TODO tune
+    # # %% Initilize
+    Q = np.diag([0.1, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
+    R = np.diag([0.1, 1 * np.pi / 180]) ** 2  # TODO tune
 
-    # # first is for joint compatibility, second is individual
-    # JCBBalphas = np.array([0.001, 0.0001])  # TODO tune
+    # first is for joint compatibility, second is individual
+    JCBBalphas = np.array([0.001, 0.0001])  # TODO tune
 
     # # %% lættis values - same error, but worse consistency
     # Q = np.diag([0.5, 0.5, 5 * np.pi / 180]) ** 2  
@@ -110,12 +110,12 @@ def main():
     # # first is for joint compatibility, second is individual
     # JCBBalphas = np.array([0.001, 0.0001])
 
-    # %% Initilize
-    Q = np.diag([0.001, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
-    R = np.diag([0.001, 1 * np.pi / 180]) ** 2  # TODO tune
+    # # %% Initilize
+    # Q = np.diag([0.001, 0.1, 1 * np.pi / 180]) ** 2  # TODO tune
+    # R = np.diag([0.001, 1 * np.pi / 180]) ** 2  # TODO tune
 
-    # first is for joint compatibility, second is individual
-    JCBBalphas = np.array([1e-8, 1e-8])
+    # # first is for joint compatibility, second is individual
+    # JCBBalphas = np.array([1e-8, 1e-8])
 
     doAsso = True
 

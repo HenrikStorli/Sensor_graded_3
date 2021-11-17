@@ -182,10 +182,10 @@ def main():
             # ? reset time to this laser time for next post predict
             t = timeLsr[mk]
             odo = odometry(speed[k + 1], steering[k + 1], dt, car)
-            eta, P =  # TODO predict
+            eta, P =  slam.predict(eta, P, odo) # TODO predict
 
             z = detectTrees(LASER[mk])
-            eta, P, NIS[mk], a[mk] =  # TODO update
+            eta, P, NIS[mk], a[mk] =  slam.update(eta, P, z) # TODO update
 
             num_asso = np.count_nonzero(a[mk] > -1)
 
